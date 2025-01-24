@@ -1,5 +1,7 @@
  const logoutBtn=document.getElementById("logoutBtn");
  const inputSearch = document.getElementById("searchInput");
+ const tasks = document.querySelectorAll(".task");
+
 
  //verifier connexion
  const user=localStorage.getItem("utilisateurConnecte");
@@ -63,6 +65,31 @@ inputSearch.addEventListener("input", function() {
       });
       creerTbody(tasksToShow); 
 })
+
+// Sélectionner/désélectionner toutes les tâches
+document.getElementById("selectAll").addEventListener("change", function () {
+    const checkboxes = document.querySelectorAll('tbody input[type="checkbox"]');
+    checkboxes.forEach((checkbox) => (checkbox.checked = this.checked));
+  });
+   
+// Ajouter une tâche à la liste
+formAddTache.addEventListener("submit", function (event) {
+    event.preventDefault();
+  const  taches = getTaches();
+    let newTache = Object.fromEntries(new FormData(formAddTache))
+    if(newTache.description.trim() === "") {
+        document.getElementById("addTacheError").textContent = "La description de la tâche est requise.";
+        return;
+    }
+
+    newTache["id"] = getId()
+    taches.push(newTache);
+    document.getElementById("listeTaches").appendChild(creerTr(newTache));
+    updateTaches(taches);
+    document.getElementById("formAddTache").reset();
+    taskModal.classList.add("hidden");
+  });
+
 
 ///////////////////////////fonction////////////////
 
@@ -159,4 +186,42 @@ function delTache(taskId) {
     if (taskRow) {
         taskRow.remove();
     }
+}
+
+//////////////////////////drag and drop///////////////////////
+const todoTableBody = document.querySelector('#listeTaches');
+
+todoTableBody.addEventListener('dragstart', (e) => {
+    e.target.classList.add('dragging');
+});
+
+todoTableBody.addEventListener('dragend', () => {
+    e.target.classList.remove('dragging');
+});
+
+todoTableBody.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+todoTableBody.addEventListener('drop', (e) => {
+    const draggingTask = document.querySelector('.dragging');
+    const closestTask = getClosestTask(todoTableBody, e.clientY);
+    if (closestTask) {
+        todoTableBody.insertBefore(draggingTask, closestTask);
+    } else {
+        todoTableBody.appendChild(draggingTask);
+    }
+}
+);
+
+function getClosestTask(list, y) {
+    const tasks = [...list.querySelectorAll('.task:not(.dragging)')];
+    return tasks.reduce((closest, task) => {
+        const rect = task.getBoundingClientRect();
+        const offset = Math.abs(y - (rect.top + rect.bottom) / 2);
+        if (!closest || offset < closest.offset) {
+            return { offset, task };
+        }
+        return closest;
+    }, null).task;
 }
